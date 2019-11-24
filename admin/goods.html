@@ -14,12 +14,86 @@
     <link rel="stylesheet" href="../css/style.css">
 	<script src="../plugins/jQuery/jquery-2.2.3.min.js"></script>
     <script src="../plugins/bootstrap/js/bootstrap.min.js"></script>
- 
+
+	<!--	引入angular-->
+	<script src="../plugins/angularjs/angular.min.js"></script>
+	<script src="../plugins/angularjs/angular-cookies.min.js"></script>
+	<!--	分页插件-->
+	<script src="../plugins/angularjs/pagination.js"></script>
+	<link rel="stylesheet" href="../plugins/angularjs/pagination.css">
+
+
+	<script>
+		var app = angular.module('xiaoxinshop', ['ngCookies','pagination']);
+
+
+		app.controller('goodsController', function ($scope, $http, $cookies) {
+
+
+
+			$scope.reloadList = function () {
+				//切换页码
+				$scope.find($scope.paginationConf.currentPage, $scope.paginationConf.itemsPerPage);
+			};
+
+			//分页控件配置
+			$scope.paginationConf = {
+				currentPage: 1,
+				totalItems: 10,
+				itemsPerPage: 10,
+				perPageOptions: [10, 20, 30, 40, 50],
+				onChange: function () {
+					console.log("paginationConf");
+					$scope.reloadList();//重新加载
+				}
+			};
+
+			$scope.fgoods={};
+			$scope.fgoods.sellerId = $cookies.getObject("sellerSellerId");
+			//分页
+			$scope.find = function (page, rows) {
+				$http.post('http://localhost:9002/goods/sellerFind?pageNum=' + page + '&pageSize=' + rows,$scope.fgoods).success(
+						function (response) {
+							console.log(1111);
+							$scope.goodsList = response.rows;
+							$scope.paginationConf.totalItems = response.total;//更新总记录数
+						}
+				);
+			}
+
+            //商品状态
+			$scope.status=['未审核','审核通过','审核未通过','关闭'];
+
+			//商品分类列表
+			$scope.itemCatList=[];
+
+
+			//加载商品分类列表
+			$scope.findItemCatList=function(){
+				$http.get('http://localhost:9001/itemCat/findAll').success(
+						function(response){
+							for(var i=0;i<response.length;i++){
+								$scope.itemCatList[response[i].id]=response[i].name;
+							}
+						}
+				);
+
+			}
+
+
+
+
+
+
+
+		});
+	</script>
+
 </head>
 
-<body class="hold-transition skin-red sidebar-mini" >
+<body class="hold-transition skin-red sidebar-mini"  ng-app="xiaoxinshop" ng-controller="goodsController" ng-init="findItemCatList()" >
   <!-- .box-body -->
-                
+
                     <div class="box-header with-border">
                         <h3 class="box-title">商品管理</h3>
                     </div>
@@ -43,15 +117,15 @@
                             </div>
                             <div class="box-tools pull-right">
                                 <div class="has-feedback">
-                                  状态：<select>
-                                         	<option value="">全部</option>      
-                                         	<option value="0">未申请</option>    
-                                         	<option value="1">申请中</option>    
-                                         	<option value="2">审核通过</option>    
-                                         	<option value="3">已驳回</option>                                     
+                                  状态：<select  ng-model="fgoods.auditStatus">
+                                         	<option value="">全部</option>
+                                         	<option value="0">未审核</option>
+                                         	<option value="1">审核通过</option>
+                                         	<option value="2">审核失败</option>
+                                         	<option value="3">关闭</option>
                                         </select>
-							                  商品名称：<input >									
-									<button class="btn btn-default" >查询</button>                                    
+							                  商品名称：<input ng-model="fgoods.goodsName">
+									<button class="btn btn-default" ng-click="reloadList()">查询</button>
                                 </div>
                             </div>
                             <!--工具栏/-->
@@ -62,56 +136,45 @@
 			                          <tr>
 			                              <th class="" style="padding-right:0px">
 			                                  <input id="selall" type="checkbox" class="icheckbox_square-blue">
-			                              </th> 
+			                              </th>
 										  <th class="sorting_asc">商品ID</th>
 									      <th class="sorting">商品名称</th>
 									      <th class="sorting">商品价格</th>
 									      <th class="sorting">一级分类</th>
 									      <th class="sorting">二级分类</th>
 									      <th class="sorting">三级分类</th>
-									      <th class="sorting">状态</th>									     						
+									      <th class="sorting">状态</th>
 					                      <th class="text-center">操作</th>
 			                          </tr>
 			                      </thead>
 			                      <tbody>
-			                          <tr>
-			                              <td><input  type="checkbox"></td>			                              
-				                          <td>1</td>
-									      <td>小米6S手机</td>
-									      <td>1090</td>
-									      <td>数码</td>
-									      <td>手机</td>
-									      <td>国产手机</td>
+			                          <tr ng-repeat="goods in goodsList">
+			                              <td><input  type="checkbox"></td>
+				                          <td>{{goods.id}}</td>
+									      <td>{{goods.goodsName}}</td>
+									      <td>{{goods.price}}</td>
+									      <td>{{itemCatList[goods.category1Id]}}</td>
+									      <td>{{itemCatList[goods.category2Id]}}</td>
+									      <td>{{itemCatList[goods.category3Id]}}</td>
 		                                  <td>
-		                                  	<span>
-		                                  		未申请
-		                                  	</span>
-		                                  	<span >
-		                                  		申请中
-		                                  	</span>
-		                                  	<span>
-		                                  		审核通过
-		                                  	</span>
-		                                  	<span>
-		                                  		已驳回
-		                                  	</span>
-		                                  </td>		                                  
-		                                  <td class="text-center">                                          
-		                                 	  <button type="button" class="btn bg-olive btn-xs">修改</button>                  
+											  {{status[goods.auditStatus]}}
+		                                  </td>
+		                                  <td class="text-center">
+											  <a href="goods_edit.html#?id={{goods.id}}" class="btn bg-olive btn-xs">修改</a>
 		                                  </td>
 			                          </tr>
 			                      </tbody>
 			                  </table>
-			                  <!--数据列表/-->                        
-							  
-							 
+			                  <!--数据列表/-->
+							<tm-pagination conf="paginationConf"></tm-pagination>
+
                         </div>
                         <!-- 数据表格 /-->
-                        
-                        
+
+
                      </div>
                     <!-- /.box-body -->
-		
+
 </body>
 
 </html>

@@ -8,404 +8,627 @@
     <title>商品编辑</title>
     <!-- Tell the browser to be responsive to screen width -->
     <meta content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" name="viewport">
-  
+
     <link rel="stylesheet" href="../plugins/bootstrap/css/bootstrap.min.css">
     <link rel="stylesheet" href="../plugins/adminLTE/css/AdminLTE.css">
     <link rel="stylesheet" href="../plugins/adminLTE/css/skins/_all-skins.min.css">
     <link rel="stylesheet" href="../css/style.css">
-	<script src="../plugins/jQuery/jquery-2.2.3.min.js"></script>
+    <script src="../plugins/jQuery/jquery-2.2.3.min.js"></script>
     <script src="../plugins/bootstrap/js/bootstrap.min.js"></script>
-    
+
     <!-- 富文本编辑器 -->
-	<link rel="stylesheet" href="../plugins/kindeditor/themes/default/default.css" />
-	<script charset="utf-8" src="../plugins/kindeditor/kindeditor-min.js"></script>
-	<script charset="utf-8" src="../plugins/kindeditor/lang/zh_CN.js"></script>
-    
-    
-      
-    
-    
+    <link rel="stylesheet" href="../plugins/kindeditor/themes/default/default.css"/>
+    <script charset="utf-8" src="../plugins/kindeditor/kindeditor-min.js"></script>
+    <script charset="utf-8" src="../plugins/kindeditor/lang/zh_CN.js"></script>
+
+
+    <script src="../plugins/angularjs/angular.min.js"></script>
+    <script src="../plugins/angularjs/angular-cookies.min.js"></script>
+    <script>
+
+        var app = angular.module('xiaoxinshop', ['ngCookies']);
+
+
+        app.controller('gGoodsController', function ($scope, $http, $cookies,$location) {
+            // 修改
+            $scope.findGGoodsById = function () {
+                //获取参数值
+                var id= $location.search()['id'];
+                if(id==null){
+                    return ;
+                }
+
+                $http.get('http://localhost:9002/goods/findById?id=' + id).success(
+                    function (response) {
+
+                        $scope.gGoods = response;
+                        editor.html( $scope.gGoods.goodsDesc.introduction);
+
+                        //显示图片
+                        $scope.gGoods.goodsDesc.itemImages= JSON.parse($scope.gGoods.goodsDesc.itemImages);
+                        //显示扩展属性
+                        $scope.gGoods.goodsDesc.customAttributeItems=  JSON.parse($scope.gGoods.goodsDesc.customAttributeItems);
+                        //规格
+                        $scope.gGoods.goodsDesc.specificationItems=JSON.parse($scope.gGoods.goodsDesc.specificationItems);
+
+                        //SKU列表规格列转换
+                        for( var i=0;i<$scope.gGoods.itemList.length;i++ ){
+                            $scope.gGoods.itemList[i].spec =
+                                JSON.parse( $scope.gGoods.itemList[i].spec);
+                        }
+
+
+
+                    },
+                );
+            }
+
+
+
+
+            // $scope.setValue =function($event){
+            //     if ($event.target.checked){
+            //         $scope.gGoods.goods.isEnableSpec = '1';
+            //     }else {
+            //         $scope.gGoods.goods.isEnableSpec = '0';
+            //     }
+            //
+            // }
+
+            //根据规格名称和选项名称返回是否被勾选
+            $scope.checkAttributeValue=function(specName,optionName){
+                var items= $scope.gGoods.goodsDesc.specificationItems;
+                var object= $scope.searchObjectByKey(items,'attributeName',specName);
+                if(object==null){
+                    return false;
+                }else{
+                    if(object.attributeValue.indexOf(optionName)>=0){
+                        return true;
+                    }else{
+                        return false;
+                    }
+                }
+            }
+
+            $scope.update=function(){
+                $scope.gGoods.goods.auditStatus ='0';
+                $http.post('http://localhost:9002/goods/update',$scope.gGoods).success(
+                    function (response) {
+
+                        if (response.success) {
+                            alert(response.message);
+                            $scope.gGoods = {};
+                            editor.html("");
+
+                        } else {
+                            alert(response.message);
+                        }
+                    }
+                );
+            }
+
+            $scope.save =function(){
+                if ($scope.gGoods.goods.id!=null){
+                    $scope.update();
+
+                }else {
+                    $scope.add();
+                }
+            }
+
+
+            $scope.gGoods = {goods: {}, goodsDesc: {itemImages: [],specificationItems:[]}};
+            $scope.gGoods.goods.sellerId = $cookies.getObject("sellerSellerId");
+            //添加
+            $scope.add = function () {
+                console.log($scope.gGoods);
+                $scope.gGoods.goodsDesc.introduction = editor.html();
+                $http.post('http://localhost:9002/goods/add', $scope.gGoods).success(
+                    function (response) {
+                        if (response.success) {
+                            alert(response.message);
+                            $scope.gGoods = {};
+
+                            editor.html("");
+                        } else {
+                            alert(response.message);
+                        }
+                    }
+                );
+            }
+
+
+            $scope.image = {};
+            $scope.uploadFile = function () {
+                console.log("111");
+                var formData = new FormData();
+                formData.append("file", file.files[0]);
+                $http({
+                    method: 'POST',
+                    url: "http://localhost:9002/upload",
+                    data: formData,
+                    headers: {'Content-Type': undefined},
+                    transformRequest: angular.identity
+                }).success(
+                    function (response) {
+                        if (response.success) {
+
+                            $scope.image.url = response.message;
+                        } else {
+                            alert(response.message);
+                        }
+                    }
+                );
+            }
+
+
+            $scope.addImage = function () {
+                $scope.gGoods.goodsDesc.itemImages.push($scope.image);
+            }
+
+            $scope.removeImage = function (index) {
+                $scope.gGoods.goodsDesc.itemImages.splice(index, 1);
+            }
+
+
+            // 类别管理
+            $scope.selectItemCat1List = function (parentId) {
+
+                $http.get('http://localhost:9001/itemCat/findByParentId?parentId=' + parentId).success(
+                    function (response) {
+                        $scope.itemCat1List = response;
+
+                    }
+                );
+            }
+
+            //读取二级分类
+            $scope.$watch('gGoods.goods.category1Id', function (newValue, oldValue) {
+                //根据选择的值，查询二级分类
+                $http.get('http://localhost:9001/itemCat/findByParentId?parentId=' + newValue).success(
+                    function (response) {
+                        $scope.itemCat2List = response;
+
+                    }
+                );
+            });
+
+            //读取三级分类
+            $scope.$watch('gGoods.goods.category2Id', function (newValue, oldValue) {
+                //根据选择的值，查询二级分类
+                $http.get('http://localhost:9001/itemCat/findByParentId?parentId=' + newValue).success(
+                    function (response) {
+                        $scope.itemCat3List = response;
+
+                    }
+                );
+            });
+
+           //三级分类改变后查询对应模板id
+			$scope.$watch('gGoods.goods.category3Id', function (newValue, oldValue) {
+				$scope.findById(newValue);
+			});
+			//查询对应的模板Id
+			$scope.findById = function (id) {
+
+				$http.get('http://localhost:9001/itemCat/findById?id='+id).success(
+						function (response) {
+							$scope.gGoods.goods.typeTemplateId=response.typeId;
+
+						}
+				);
+			}
+
+			//模板id修改后加载模板对应的品牌以及扩展属性以及规格
+			$scope.$watch('gGoods.goods.typeTemplateId', function (newValue, oldValue) {
+
+				$scope.findBrandsByTypeTemplateId(newValue);
+				$scope.findSpecList(newValue);
+			});
+
+
+			//查询对应的模板
+			$scope.findBrandsByTypeTemplateId = function (id) {
+				$http.get('http://localhost:9001/typeTemplate/findById?id=' + id).success(
+						function (response) {
+
+							$scope.typeTemplate = response;
+                            //转换品牌列表
+							$scope.typeTemplate.brandIds = JSON.parse($scope.typeTemplate.brandIds);
+                            if($location.search()['id']==null){
+                                //扩展属性
+                                $scope.gGoods.goodsDesc.customAttributeItems=JSON.parse( $scope.typeTemplate.customAttributeItems);
+                            }
+
+
+						},
+				);
+			}
+            //对应的规格
+			$scope.findSpecList=function(id){
+				$http.get('http://localhost:9001/typeTemplate/findSpecList?id=' + id).success(
+						function (response) {
+							$scope.specList=response;
+
+						});
+			}
+
+            //从集合中按照key查询对象
+            $scope.searchObjectByKey=function(list,key,keyValue){
+                for(var i=0;i<list.length;i++){
+                    if(list[i][key]==keyValue){
+                        return list[i];
+                    }
+                }
+                return null;
+            }
+
+            $scope.updateSpecAttribute=function($event,name,value){
+                var object= $scope.searchObjectByKey(
+                    $scope.gGoods.goodsDesc.specificationItems ,'attributeName', name);
+                if(object!=null){
+                    if($event.target.checked ){
+                        object.attributeValue.push(value);
+                    }else{//取消勾选//
+
+                        object.attributeValue.splice( object.attributeValue.indexOf(value ) ,1);//移除选项
+                        //如果选项都取消了，将此条记录移除
+                        if(object.attributeValue.length==0){
+                            $scope.gGoods.goodsDesc.specificationItems.splice(
+                                $scope.gGoods.goodsDesc.specificationItems.indexOf(object),1);
+                        }
+                    }
+                }else{
+                    $scope.gGoods.goodsDesc.specificationItems.push(
+                        {"attributeName":name,"attributeValue":[value]});
+                }
+            }
+
+
+            //创建SKU列表
+            $scope.createItemList=function(){
+                $scope.gGoods.itemList=[{spec:{},price:0,num:99999,status:'0',isDefault:'0' } ];//初始
+                var items=  $scope.gGoods.goodsDesc.specificationItems;
+                for(var i=0;i< items.length;i++){
+                    $scope.gGoods.itemList = addColumn( $scope.gGoods.itemList,items[i].attributeName,items[i].attributeValue );
+                }
+            }
+           //添加列值
+            addColumn=function(list,columnName,conlumnValues){
+                var newList=[];//新的集合
+                for(var i=0;i<list.length;i++){
+                    var oldRow= list[i];
+                    for(var j=0;j<conlumnValues.length;j++){
+                        var newRow= JSON.parse( JSON.stringify( oldRow )  );//深克隆
+                        newRow.spec[columnName]=conlumnValues[j];
+                        newList.push(newRow);
+                    }
+                }
+                return newList;
+            }
+
+
+
+
+
+
+
+
+
+
+        });
+    </script>
+
+
 </head>
 
-<body class="hold-transition skin-red sidebar-mini" >
+<body class="hold-transition skin-red sidebar-mini" ng-app="xiaoxinshop" ng-controller="gGoodsController"
+      ng-init="selectItemCat1List(0);findGGoodsById()">
 
-            <!-- 正文区域 -->
-            <section class="content">
+<!-- 正文区域 -->
+<section class="content">
 
-                <div class="box-body">
+    <div class="box-body">
 
-                    <!--tab页-->
-                    <div class="nav-tabs-custom">
+        <!--tab页-->
+        <div class="nav-tabs-custom">
 
-                        <!--tab头-->
-                        <ul class="nav nav-tabs">                       		
-                            <li class="active">
-                                <a href="#home" data-toggle="tab">商品基本信息</a>                                                        
-                            </li>   
-                            <li >
-                                <a href="#pic_upload" data-toggle="tab">商品图片</a>                                                        
-                            </li>    
-                            <li >
-                                <a href="#customAttribute" data-toggle="tab">扩展属性</a>                                                        
-                            </li>     
-                            <li >
-                                <a href="#spec" data-toggle="tab" >规格</a>                                                        
-                            </li>                       
-                        </ul>
-                        <!--tab头/-->
-						
-                        <!--tab内容-->
-                        <div class="tab-content">
+            <!--tab头-->
+            <ul class="nav nav-tabs">
+                <li class="active">
+                    <a href="#home" data-toggle="tab">商品基本信息</a>
+                </li>
+                <li>
+                    <a href="#pic_upload" data-toggle="tab">商品图片</a>
+                </li>
+                <li>
+                    <a href="#customAttribute" data-toggle="tab">扩展属性</a>
+                </li>
+                <li>
+                    <a href="#spec" data-toggle="tab">规格</a>
+                </li>
+            </ul>
+            <!--tab头/-->
 
-                            <!--表单内容-->
-                            <div class="tab-pane active" id="home">
-                                <div class="row data-type">                                  
-								   <div class="col-md-2 title">商品分类</div>
-		                          
-		                           	  <div class="col-md-10 data">
-		                           	  	<table>
-		                           	  		<tr>
-		                           	  			<td>
-		                           	  				<select class="form-control" >														
-		                           	  				</select>
-		                              			</td>
-		                              			<td>
-		                           	  				<select class="form-control select-sm" ></select>
-		                              			</td>
-		                              			<td>
-		                           	  				<select class="form-control select-sm" ></select>
-		                              			</td>
-		                              			<td>
-		                           	  				模板ID:19
-		                              			</td>
-		                           	  		</tr>
-		                           	  	</table>
-		                              	
-		                              </div>	                              
-		                          	  
-									
-		                           <div class="col-md-2 title">商品名称</div>
-		                           <div class="col-md-10 data">
-		                               <input type="text" class="form-control"    placeholder="商品名称" value="">
-		                           </div>
-		                           
-		                           <div class="col-md-2 title">品牌</div>
-		                           <div class="col-md-10 data">
-		                              <select class="form-control" ></select>
-		                           </div>
-		
-								   <div class="col-md-2 title">副标题</div>
-		                           <div class="col-md-10 data">
-		                               <input type="text" class="form-control"   placeholder="副标题" value="">
-		                           </div>
-		                           
-		                           <div class="col-md-2 title">价格</div>
-		                           <div class="col-md-10 data">
-		                           	   <div class="input-group">
-			                          	   <span class="input-group-addon">¥</span>
-			                               <input type="text" class="form-control"  placeholder="价格" value="">
-		                           	   </div>
-		                           </div>
-		                           
-		                           <div class="col-md-2 title editer">商品介绍</div>
-                                   <div class="col-md-10 data editer">
-                                       <textarea name="content" style="width:800px;height:400px;visibility:hidden;" ></textarea>
-                                   </div>
-		                           
-		                           <div class="col-md-2 title rowHeight2x">包装列表</div>
-		                           <div class="col-md-10 data rowHeight2x">
-		                               
-		                           	<textarea rows="4"  class="form-control"   placeholder="包装列表"></textarea>
-		                           </div>
-		                           
-		                           <div class="col-md-2 title rowHeight2x">售后服务</div>
-		                           <div class="col-md-10 data rowHeight2x">
-		                               <textarea rows="4"  class="form-control"    placeholder="售后服务"></textarea>
-		                           </div>                        
-                                  
-                                    
-                                </div>
-                            </div>
-                            
-                            <!--图片上传-->
-                            <div class="tab-pane" id="pic_upload">
-                                <div class="row data-type">                                  
-								 <!-- 颜色图片 -->
-								 <div class="btn-group">
-					                 <button type="button" class="btn btn-default" title="新建" data-target="#uploadModal"  data-toggle="modal"  ><i class="fa fa-file-o"></i> 新建</button>
-                             		                 
-					             </div>
-								 
-								 <table class="table table-bordered table-striped table-hover dataTable">
-					                    <thead>
-					                        <tr>
-					                            
-											    <th class="sorting">颜色</th>
-											    <th class="sorting">图片</th>
-												<th class="sorting">操作</th>
-							            </thead>
-					                    <tbody>
-					                      <tr>					                           
-									            <td>
-									            	
-									            </td>
-									            <td>
-									           		<img alt="" src="" width="100px" height="100px">	            	 
-									            </td>
-												 <td> <button type="button" class="btn btn-default" title="删除" ><i class="fa fa-trash-o"></i> 删除</button></td> 
-					                      </tr>
-					                    </tbody>
-								 </table> 
-								  
-                                </div>
-                            </div>
-                           
-                           
-                            <!--扩展属性-->
-                            <div class="tab-pane" id="customAttribute">
-                                <div class="row data-type">                                
-	                                <div>
-		                                <div class="col-md-2 title">扩展属性1</div>
-				                        <div class="col-md-10 data">
-				                              <input class="form-control" placeholder="扩展属性1">	            	 
-				                        </div>
-	                                </div>       
-									<div>
-		                                <div class="col-md-2 title">扩展属性2</div>
-				                        <div class="col-md-10 data">
-				                              <input class="form-control" placeholder="扩展属性2">	            	 
-				                        </div>
-	                                </div>  									
-                                </div>
-                            </div>
-                      
-                            <!--规格-->
-                            <div class="tab-pane" id="spec">
-                            	<div class="row data-type">
-	                            	<div class="col-md-2 title">是否启用规格</div>
-			                        <div class="col-md-10 data">
-			                        	<input type="checkbox" >			                           
-			                        </div>
-                            	</div>
-                            	<p>
-                            	
-                            	<div>
-                            	
-	                                <div class="row data-type">
-	                                
-		                                <div>
-			                                <div class="col-md-2 title">屏幕尺寸</div>
-					                        <div class="col-md-10 data">
-					                               
-					                            <span>
-					                            	<input  type="checkbox" >4.0					                            				                            	
-					                            </span>  	
-												<span>
-					                            	<input  type="checkbox" >4.5					                            				                            	
-					                            </span>
-												<span>
-					                            	<input  type="checkbox" >5.0					                            				                            	
-					                            </span>												
-					                            	
-					                        </div>
-		                                </div>   
-										<div>
-			                                <div class="col-md-2 title">网络制式</div>
-					                        <div class="col-md-10 data">
-					                               
-					                            <span>
-					                            	<input  type="checkbox" >2G					                            				                            	
-					                            </span>  	
-												<span>
-					                            	<input  type="checkbox" >3G					                            				                            	
-					                            </span>
-												<span>
-					                            	<input  type="checkbox" >4G					                            				                            	
-					                            </span>												
-					                            	
-					                        </div>
-		                                </div>  
-		                                                                                  
-	                                </div>
-	
-	                                
-	                                <div class="row data-type">
-	                                	 <table class="table table-bordered table-striped table-hover dataTable">
-						                    <thead>
-						                        <tr>					                          
-												    <th class="sorting">屏幕尺寸</th>
-													<th class="sorting">网络制式</th>
-												    <th class="sorting">价格</th>
-												    <th class="sorting">库存</th>
-												    <th class="sorting">是否启用</th>
-												    <th class="sorting">是否默认</th>
-											    </tr>
-								            </thead>
-						                    <tbody>
-						                      <tr>					                           
-										            <td>
-										            	4.0
-										            </td>
-													<td>
-										            	3G
-										            </td>
-										            <td>
-										           		<input class="form-control"  placeholder="价格">
-										            </td>
-										            <td>
-										            	<input class="form-control" placeholder="库存数量">
-										            </td>
-										            <td>
-										             	<input type="checkbox" >
-										            </td>
-										            <td>
-										                <input type="checkbox" >									             	
-										            </td>
-						                      </tr>
-											  <tr>					                           
-										            <td>
-										            	4.0
-										            </td>
-													<td>
-										            	4G
-										            </td>
-										            <td>
-										           		<input class="form-control"  placeholder="价格">
-										            </td>
-										            <td>
-										            	<input class="form-control" placeholder="库存数量">
-										            </td>
-										            <td>
-										             	<input type="checkbox" >
-										            </td>
-										            <td>
-										                <input type="checkbox" >									             	
-										            </td>
-						                      </tr>
-											  <tr>					                           
-													<td>
-										            	5.0
-										            </td>
-													<td>
-										            	3G
-										            </td>
-										            <td>
-										           		<input class="form-control"  placeholder="价格">
-										            </td>
-										            <td>
-										            	<input class="form-control" placeholder="库存数量">
-										            </td>
-										            <td>
-										             	<input type="checkbox" >
-										            </td>
-										            <td>
-										                <input type="checkbox" >									             	
-										            </td>
-						                      </tr>
-											  <tr>					                           
-													<td>
-										            	5.0
-										            </td>
-													<td>
-										            	4G
-										            </td>
-										            <td>
-										           		<input class="form-control"  placeholder="价格">
-										            </td>
-										            <td>
-										            	<input class="form-control" placeholder="库存数量">
-										            </td>
-										            <td>
-										             	<input type="checkbox" >
-										            </td>
-										            <td>
-										                <input type="checkbox" >									             	
-										            </td>
-						                      </tr>
-											  
-						                    </tbody>
-									 	</table>
-								
-	                                </div>
-	                                
-	                            </div>
-                            </div>
-                            
+            <!--tab内容-->
+            <div class="tab-content">
+
+                <!--表单内容-->
+                <div class="tab-pane active" id="home">
+                    <div class="row data-type">
+                        <div class="col-md-2 title">商品分类</div>
+
+                        <div class="col-md-10 data">
+                            <table>
+                                <tr>
+                                    <td>
+                                        <select class="form-control" ng-model="gGoods.goods.category1Id"
+                                                ng-options="item.id as item.name for item in itemCat1List">
+                                        </select>
+                                    </td>
+                                    <td>
+                                        <select class="form-control select-sm" ng-model="gGoods.goods.category2Id"
+                                                ng-options="item.id as item.name for item in itemCat2List"></select>
+                                    </td>
+                                    <td>
+                                        <select class="form-control select-sm" ng-model="gGoods.goods.category3Id"
+												ng-options="item.id as item.name for item in itemCat3List"></select>
+                                    </td>
+                                    <td>
+                                        模板ID:{{gGoods.goods.typeTemplateId}}
+                                    </td>
+                                </tr>
+                            </table>
+
                         </div>
-                        <!--tab内容/-->
-						<!--表单内容/-->
-							 
+
+
+                        <div class="col-md-2 title">商品名称</div>
+                        <div class="col-md-10 data">
+                            <input type="text" class="form-control" placeholder="商品名称" value=""
+                                   ng-model="gGoods.goods.goodsName">
+                        </div>
+
+                        <div class="col-md-2 title">品牌</div>
+                        <div class="col-md-10 data">
+                            <select class="form-control" ng-model="gGoods.goods.brandId" ng-options="item.id as item.text for item in typeTemplate.brandIds"></select>
+                        </div>
+
+                        <div class="col-md-2 title">副标题</div>
+                        <div class="col-md-10 data">
+                            <input type="text" class="form-control" placeholder="副标题" value=""
+                                   ng-model="gGoods.goods.caption">
+                        </div>
+
+                        <div class="col-md-2 title">价格</div>
+                        <div class="col-md-10 data">
+                            <div class="input-group">
+                                <span class="input-group-addon">¥</span>
+                                <input type="text" class="form-control" placeholder="价格" value=""
+                                       ng-model="gGoods.goods.price">
+                            </div>
+                        </div>
+
+                        <div class="col-md-2 title editer">商品介绍</div>
+                        <div class="col-md-10 data editer">
+                            <textarea name="content" style="width:800px;height:400px;visibility:hidden;"></textarea>
+                        </div>
+
+                        <div class="col-md-2 title rowHeight2x">包装列表</div>
+                        <div class="col-md-10 data rowHeight2x">
+
+                            <textarea rows="4" class="form-control" placeholder="包装列表"
+                                      ng-model="gGoods.goodsDesc.packageList"></textarea>
+                        </div>
+
+                        <div class="col-md-2 title rowHeight2x">售后服务</div>
+                        <div class="col-md-10 data rowHeight2x">
+                            <textarea rows="4" class="form-control" placeholder="售后服务"
+                                      ng-model="gGoods.goodsDesc.saleService"></textarea>
+                        </div>
+
+
                     </div>
-                 	
-                 	
-                 	
-                 	
-                   </div>
-                  <div class="btn-toolbar list-toolbar">
-				      <button class="btn btn-primary" ><i class="fa fa-save"></i>保存</button>
-				      <button class="btn btn-default" >返回列表</button>
-				  </div>
-			
-            </section>
-            
-            
+                </div>
+
+                <!--图片上传-->
+                <div class="tab-pane" id="pic_upload">
+                    <div class="row data-type">
+                        <!-- 颜色图片 -->
+                        <div class="btn-group">
+                            <button type="button" class="btn btn-default" title="新建" data-target="#uploadModal"
+                                    data-toggle="modal" ng-click="image={}"><i class="fa fa-file-o"></i> 添加图片
+                            </button>
+
+                        </div>
+
+                        <table class="table table-bordered table-striped table-hover dataTable">
+                            <thead>
+                            <tr>
+
+                                <th class="sorting">颜色</th>
+                                <th class="sorting">图片</th>
+                                <th class="sorting">操作</th>
+                            </thead>
+                            <tbody>
+                            <tr ng-repeat="img in gGoods.goodsDesc.itemImages">
+                                <td>
+                                    {{img.color}}
+                                </td>
+                                <td>
+                                    <img alt="" src="{{img.url}}" width="100px" height="100px">
+                                </td>
+                                <td>
+                                    <button type="button" class="btn btn-default" title="删除"
+                                            ng-click="removeImage($index)"><i class="fa fa-trash-o"></i> 删除
+                                    </button>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+
+                    </div>
+                </div>
+
+
+                <!--扩展属性-->
+                <div class="tab-pane" id="customAttribute">
+                    <div class="row data-type" ng-repeat="extend in gGoods.goodsDesc.customAttributeItems">
+
+                        <div>
+                            <div class="col-md-2 title">{{extend.text}}</div>
+                            <div class="col-md-10 data">
+                                <input class="form-control" placeholder="{{extend.text}}" ng-model="extend.value" >
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {{gGoods.itemList}}<br>
+                {{gGoods.goods.isEnableSpec}}
+                <!--规格-->
+                <div class="tab-pane" id="spec">
+                    <div class="row data-type">
+                        <div class="col-md-2 title">是否启用规格</div>
+                        <div class="col-md-10 data">
+                            <input type="checkbox" ng-model="gGoods.goods.isEnableSpec"  ng-true-value="1" ng-false-value="0" ng-checked="gGoods.goods.isEnableSpec=='1'">
+                        </div>
+                    </div>
+                    <p>
+                    <div ng-if="gGoods.goods.isEnableSpec =='1'">
+
+                        <div class="row data-type" >
+
+                            <div ng-repeat="spec in specList">
+                                <div class="col-md-2 title">{{spec.text}}</div>
+                                <div class="col-md-10 data">
+
+					                            <span ng-repeat="option in spec.options">
+					                            	<input type="checkbox" ng-click="updateSpecAttribute($event,spec.text,option.optionName);createItemList()" ng-checked="checkAttributeValue(spec.text,option.optionName)">{{option.optionName}}
+					                            </span>
+
+
+                                </div>
+                            </div>
+
+
+                        </div>
+
+
+                        <div class="row data-type">
+                            <table class="table table-bordered table-striped table-hover dataTable">
+                                <thead>
+                                <tr>
+                                    <th class="sorting" ng-repeat="Item in gGoods.goodsDesc.specificationItems">{{Item.attributeName}}</th>
+
+                                    <th class="sorting">价格</th>
+                                    <th class="sorting">库存</th>
+                                    <th class="sorting">是否启用</th>
+                                    <th class="sorting">是否默认</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                <tr ng-repeat="pojo in gGoods.itemList">
+                                    <td  ng-repeat="item in gGoods.goodsDesc.specificationItems">
+                                        {{pojo.spec[item.attributeName]}}
+                                    </td>
+
+                                    <td>
+                                        <input class="form-control" placeholder="价格" ng-model="pojo.price">
+                                    </td>
+                                    <td>
+                                        <input class="form-control" placeholder="库存数量" ng-model="pojo.num">
+                                    </td>
+                                    <td>
+                                        <input type="checkbox" ng-model="pojo.status" ng-true-value="1" ng-false-value="0"  ng-checked="pojo.status=='1'">
+                                    </td>
+                                    <td>
+                                        <input type="checkbox"  ng-model="pojo.isDefault" ng-true-value="1" ng-false-value="0" ng-checked="pojo.isDefault=='1'">
+                                    </td>
+                                </tr>
+
+
+                                </tbody>
+                            </table>
+
+                        </div>
+
+                    </div>
+                </div>
+
+            </div>
+            <!--tab内容/-->
+            <!--表单内容/-->
+
+        </div>
+
+
+    </div>
+    <div class="btn-toolbar list-toolbar">
+        <button class="btn btn-primary" ng-click="save()"><i class="fa fa-save"></i>保存</button>
+        <a href="goods.html" class="btn btn-default">返回列表</a>
+    </div>
+
+</section>
+
+
 <!-- 上传窗口 -->
 <div class="modal fade" id="uploadModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
-  <div class="modal-dialog" >
-	<div class="modal-content">
-		<div class="modal-header">
-			<button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
-			<h3 id="myModalLabel">上传商品图片</h3>
-		</div>
-		<div class="modal-body">							
-			
-			<table class="table table-bordered table-striped">
-		      	<tr>
-		      		<td>颜色</td>
-		      		<td><input  class="form-control" placeholder="颜色" >  </td>
-		      	</tr>			    
-		      	<tr>
-		      		<td>商品图片</td>
-		      		<td>
-						<table>
-							<tr>
-								<td>
-								<input type="file" id="file" />				                
-					                <button class="btn btn-primary" type="button" >
-				                   		上传
-					                </button>	
-					            </td>
-								<td>
-									<img  src="" width="200px" height="200px">
-								</td>
-							</tr>						
-						</table>
-		      		</td>
-		      	</tr>		      	
-			 </table>				
-			
-		</div>
-		<div class="modal-footer">						
-			<button class="btn btn-success"  data-dismiss="modal" aria-hidden="true">保存</button>
-			<button class="btn btn-default" data-dismiss="modal" aria-hidden="true">关闭</button>
-		</div>
-	  </div>
-	</div>
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                <h3 id="myModalLabel">上传商品图片</h3>
+            </div>
+            <div class="modal-body">
+
+                <table class="table table-bordered table-striped">
+                    <tr>
+                        <td>颜色</td>
+                        <td><input class="form-control" placeholder="颜色" ng-model="image.color"></td>
+                    </tr>
+                    <tr>
+                        <td>商品图片</td>
+                        <td>
+                            <table>
+                                <tr>
+                                    <td>
+                                        <input type="file" id="file"/>
+                                        <button class="btn btn-primary" type="button" ng-click="uploadFile()">
+                                            上传
+                                        </button>
+                                    </td>
+                                    <td>
+                                        <img src="{{image.url}}" width="200px" height="200px">
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                </table>
+
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-success" data-dismiss="modal" aria-hidden="true" ng-click="addImage()">保存
+                </button>
+                <button class="btn btn-default" data-dismiss="modal" aria-hidden="true">关闭</button>
+            </div>
+        </div>
+    </div>
 </div>
 
-            
-            <!-- 正文区域 /-->
+
+<!-- 正文区域 /-->
 <script type="text/javascript">
 
-	var editor;
-	KindEditor.ready(function(K) {
-		editor = K.create('textarea[name="content"]', {
-			allowFileManager : true
-		});
-	});
+    var editor;
+    KindEditor.ready(function (K) {
+        editor = K.create('textarea[name="content"]', {
+            allowFileManager: true
+        });
+    });
 
 </script>
-       
+
 </body>
 
 </html>
