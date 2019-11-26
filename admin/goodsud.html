@@ -50,6 +50,8 @@
 
 			$scope.fgoods={};
 			$scope.fgoods.sellerId = $cookies.getObject("sellerSellerId");
+			$scope.fgoods.auditStatus='1';
+
 			//分页
 			$scope.find = function (page, rows) {
 				$http.post('http://localhost:9002/goods/sellerFind?pageNum=' + page + '&pageSize=' + rows,$scope.fgoods).success(
@@ -62,7 +64,7 @@
 			}
 
             //商品状态
-			$scope.status=['未审核','审核通过','审核未通过','关闭'];
+			$scope.status=['仓库中','出售中'];
 
 			//商品分类列表
 			$scope.itemCatList=[];
@@ -74,6 +76,35 @@
 						function(response){
 							for(var i=0;i<response.length;i++){
 								$scope.itemCatList[response[i].id]=response[i].name;
+							}
+						}
+				);
+
+			}
+
+			$scope.selection =[];
+
+			$scope.checked =function ($event,id) {
+				//如果被选择状态 则添加
+				if($event.target.checked){
+					$scope.selection.push( id);
+				}else {
+					//如果 状态未被选择则从集合中移除
+					var idx = $scope.selection.indexOf(id);
+					$scope.selection.splice(idx, 1);//删除
+
+				}
+			}
+
+			$scope.updateMarketableStatus =function (status) {
+
+				$http.post('http://localhost:9002/goods/updateMarketableStatus?status='+status,$scope.selection).success(
+						function(response){
+							if(response.success){
+								$scope.reloadList();//刷新列表
+								$scope.selection =[];
+							}else {
+								alert(response.message);
 							}
 						}
 				);
@@ -107,23 +138,19 @@
                             <div class="pull-left">
                                 <div class="form-group form-inline">
                                     <div class="btn-group">
-										<a href="goods_edit.html" class="btn btn-default"><i class="fa fa-file-o"></i>新建</a>
-
-<!--                                        <button type="button" class="btn btn-default" title="删除" ><i class="fa fa-trash-o"></i> 删除</button>-->
-<!--                                        <button type="button" class="btn btn-default" title="提交审核" ><i class="fa fa-check"></i> 提交审核</button>-->
-<!--                                        <button type="button" class="btn btn-default" title="屏蔽" onclick='confirm("你确认要屏蔽吗？")'><i class="fa fa-ban"></i> 屏蔽</button>-->
+										<a ng-click="updateMarketableStatus(1)" class="btn btn-default"><i class="fa fa-file-o"></i>上架</a>
+										<a ng-click="updateMarketableStatus(0)" class="btn btn-default"><i class="fa fa-file-o"></i>下架</a>
                                         <button type="button" class="btn btn-default" title="刷新" onclick="window.location.reload();"><i class="fa fa-refresh"></i> 刷新</button>
                                     </div>
                                 </div>
                             </div>
                             <div class="box-tools pull-right">
                                 <div class="has-feedback">
-                                  状态：<select  ng-model="fgoods.auditStatus">
+                                  状态：<select  ng-model="fgoods.isMarketable">
                                          	<option value="">全部</option>
-                                         	<option value="0">未审核</option>
-                                         	<option value="1">审核通过</option>
-                                         	<option value="2">审核失败</option>
-                                         	<option value="3">关闭</option>
+                                         	<option value="1">出售中</option>
+                                         	<option value="0">仓库中</option>
+
                                         </select>
 							                  商品名称：<input ng-model="fgoods.goodsName">
 									<button class="btn btn-default" ng-click="reloadList()">查询</button>
@@ -144,13 +171,13 @@
 									      <th class="sorting">一级分类</th>
 									      <th class="sorting">二级分类</th>
 									      <th class="sorting">三级分类</th>
-									      <th class="sorting">状态</th>
-					                      <th class="text-center">操作</th>
+									      <th class="sorting">商品状态</th>
+
 			                          </tr>
 			                      </thead>
 			                      <tbody>
 			                          <tr ng-repeat="goods in goodsList">
-			                              <td><input  type="checkbox"></td>
+			                              <td><input  type="checkbox" ng-click="checked($event,goods.id)" ></td>
 				                          <td>{{goods.id}}</td>
 									      <td>{{goods.goodsName}}</td>
 									      <td>{{goods.price}}</td>
@@ -158,11 +185,11 @@
 									      <td>{{itemCatList[goods.category2Id]}}</td>
 									      <td>{{itemCatList[goods.category3Id]}}</td>
 		                                  <td>
-											  {{status[goods.auditStatus]}}
+											  {{status[goods.isMarketable]}}
 		                                  </td>
-		                                  <td class="text-center">
-											  <a href="goods_edit.html#?id={{goods.id}}" class="btn bg-olive btn-xs">修改</a>
-		                                  </td>
+<!--		                                  <td class="text-center">-->
+<!--											  <a href="goods_edit.html#?id={{goods.id}}" class="btn bg-olive btn-xs">修改</a>-->
+<!--		                                  </td>-->
 			                          </tr>
 			                      </tbody>
 			                  </table>
