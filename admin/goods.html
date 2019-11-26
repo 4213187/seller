@@ -70,7 +70,7 @@
 
 			//加载商品分类列表
 			$scope.findItemCatList=function(){
-				$http.get('http://localhost:9001/itemCat/findAll').success(
+				$http.get('http://localhost:9002/itemCat/findAll').success(
 						function(response){
 							for(var i=0;i<response.length;i++){
 								$scope.itemCatList[response[i].id]=response[i].name;

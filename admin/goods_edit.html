@@ -174,7 +174,7 @@
             // 类别管理
             $scope.selectItemCat1List = function (parentId) {
 
-                $http.get('http://localhost:9001/itemCat/findByParentId?parentId=' + parentId).success(
+                $http.get('http://localhost:9002/itemCat/findByParentId?parentId=' + parentId).success(
                     function (response) {
                         $scope.itemCat1List = response;
 
@@ -185,7 +185,7 @@
             //读取二级分类
             $scope.$watch('gGoods.goods.category1Id', function (newValue, oldValue) {
                 //根据选择的值，查询二级分类
-                $http.get('http://localhost:9001/itemCat/findByParentId?parentId=' + newValue).success(
+                $http.get('http://localhost:9002/itemCat/findByParentId?parentId=' + newValue).success(
                     function (response) {
                         $scope.itemCat2List = response;
 
@@ -196,7 +196,7 @@
             //读取三级分类
             $scope.$watch('gGoods.goods.category2Id', function (newValue, oldValue) {
                 //根据选择的值，查询二级分类
-                $http.get('http://localhost:9001/itemCat/findByParentId?parentId=' + newValue).success(
+                $http.get('http://localhost:9002/itemCat/findByParentId?parentId=' + newValue).success(
                     function (response) {
                         $scope.itemCat3List = response;
 
@@ -211,7 +211,7 @@
 			//查询对应的模板Id
 			$scope.findById = function (id) {
 
-				$http.get('http://localhost:9001/itemCat/findById?id='+id).success(
+				$http.get('http://localhost:9002/itemCat/findById?id='+id).success(
 						function (response) {
 							$scope.gGoods.goods.typeTemplateId=response.typeId;
 
@@ -229,7 +229,7 @@
 
 			//查询对应的模板
 			$scope.findBrandsByTypeTemplateId = function (id) {
-				$http.get('http://localhost:9001/typeTemplate/findById?id=' + id).success(
+				$http.get('http://localhost:9002/typeTemplate/findById?id=' + id).success(
 						function (response) {
 
 							$scope.typeTemplate = response;
@@ -246,7 +246,7 @@
 			}
             //对应的规格
 			$scope.findSpecList=function(id){
-				$http.get('http://localhost:9001/typeTemplate/findSpecList?id=' + id).success(
+				$http.get('http://localhost:9002/typeTemplate/findSpecList?id=' + id).success(
 						function (response) {
 							$scope.specList=response;
 
