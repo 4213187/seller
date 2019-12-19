@@ -27,13 +27,16 @@
 		var app = angular.module('xiaoxinshop', ['ngCookies','pagination']);
 
 
-		app.controller('goodsController', function ($scope, $http, $cookies) {
+		app.controller('goodsController', function ($scope, $http) {
+
 
 
 
 			$scope.reloadList = function () {
+
 				//切换页码
 				$scope.find($scope.paginationConf.currentPage, $scope.paginationConf.itemsPerPage);
+
 			};
 
 			//分页控件配置
@@ -49,10 +52,12 @@
 			};
 
 			$scope.fgoods={};
-			$scope.fgoods.sellerId = $cookies.getObject("sellerSellerId");
+
 			//分页
 			$scope.find = function (page, rows) {
-				$http.post('http://localhost:9002/goods/sellerFind?pageNum=' + page + '&pageSize=' + rows,$scope.fgoods).success(
+
+				console.log($scope.fgoods.sellerId);
+				$http.post('http://localhost:9002/goods/sellerFind?pageNum=' + page + '&pageSize=' + rows,$scope.fgoods,{'withCredentials':true}).success(
 						function (response) {
 							console.log(1111);
 							$scope.goodsList = response.rows;
@@ -91,7 +96,7 @@
 
 </head>
 
-<body class="hold-transition skin-red sidebar-mini"  ng-app="xiaoxinshop" ng-controller="goodsController" ng-init="findItemCatList()" >
+<body class="hold-transition skin-red sidebar-mini"  ng-app="xiaoxinshop" ng-controller="goodsController" ng-init="findItemCatList();toUpdate()" >
   <!-- .box-body -->
 
                     <div class="box-header with-border">

@@ -21,27 +21,47 @@
 
     <script src="../plugins/angularjs/angular.min.js"></script>
 
-    <script src="../plugins/angularjs/angular-cookies.min.js"></script>
+
     <script>
 
-        var app = angular.module('xiaoxinshop', ['ngCookies']);
+        var app = angular.module('xiaoxinshop', []);
 
 
-        app.controller('shopIndexController', function ($scope, $http, $cookies) {
+        app.controller('shopIndexController', function ($scope, $http) {
             $scope.init = function () {
-                $scope.sellerSellerId = $cookies.getObject("sellerSellerId");
-                if ($cookies.getObject("sellerSellerId") === "" || $cookies.getObject("sellerSellerId") == null) {
-                    window.location = "../shoplogin.html"
-                }
+
+
+                    $http.get('http://localhost:9002/seller/check',{'withCredentials':true}).success(
+                        function (response) {
+                            if (response.success) {
+                                $scope.sellerSellerId = response.message;
+                            }else {
+                                window.location = "../shoplogin.html"
+                            }
+                        }
+                    );
+
 
             }
             $scope.logout = function () {
-                $scope.sellerSellerId = {};
-                $cookies.remove("sellerPassword",{path:"/seller"});
-                $cookies.remove("sellerSellerId",{path:"/seller"});
-                window.location = "../shoplogin.html"
+
+                $http.get('http://localhost:9002/seller/logout',{'withCredentials':true}).success(
+                    function (response) {
+                        if (response.success) {
+                            $scope.sellerSellerId={};
+                            window.location = "../shoplogin.html"
+                        }else {
+                            alert(response.message);
+                        }
+                    }
+                );
+
 
             }
+
+
+
+
 
 
         });
