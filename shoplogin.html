@@ -20,11 +20,9 @@
 		app.controller('shoploginController', function ($scope, $http,$cookieStore) {
 			$scope.login = function () {
 				console.log($scope.seller);
-				$http.post('http://localhost:9002/seller/login', $scope.seller).success(
+				$http.post('http://localhost:9002/seller/login', $scope.seller,{'withCredentials':true}).success(
 						function (response) {
 							if (response.success) {
-								$cookieStore.put("sellerSellerId",$scope.seller.sellerId)  ;
-								$cookieStore.put("sellerPassword",$scope.seller.password) ;
 
 								window.location = "admin/index.html"
 							}else {

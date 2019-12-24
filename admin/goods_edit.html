@@ -110,12 +110,12 @@
 
 
             $scope.gGoods = {goods: {}, goodsDesc: {itemImages: [],specificationItems:[]}};
-            $scope.gGoods.goods.sellerId = $cookies.getObject("sellerSellerId");
+
             //添加
             $scope.add = function () {
                 console.log($scope.gGoods);
                 $scope.gGoods.goodsDesc.introduction = editor.html();
-                $http.post('http://localhost:9002/goods/add', $scope.gGoods).success(
+                $http.post('http://localhost:9002/goods/add', $scope.gGoods,{'withCredentials':true}).success(
                     function (response) {
                         if (response.success) {
                             alert(response.message);

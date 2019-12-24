@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <!-- 页面meta -->
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>商品管理</title>
+    <!-- Tell the browser to be responsive to screen width -->
+    <meta content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" name="viewport">
+    <link rel="stylesheet" href="../plugins/bootstrap/css/bootstrap.min.css">
+    <link rel="stylesheet" href="../plugins/adminLTE/css/AdminLTE.css">
+    <link rel="stylesheet" href="../plugins/adminLTE/css/skins/_all-skins.min.css">
+    <link rel="stylesheet" href="../css/style.css">
+	<script src="../plugins/jQuery/jquery-2.2.3.min.js"></script>
+    <script src="../plugins/bootstrap/js/bootstrap.min.js"></script>
+
+	<!--	引入angular-->
+	<script src="../plugins/angularjs/angular.min.js"></script>
+
+	<!--	分页插件-->
+	<script src="../plugins/angularjs/pagination.js"></script>
+	<link rel="stylesheet" href="../plugins/angularjs/pagination.css">
+
+
+	<script>
+		var app = angular.module('xiaoxinshop', ['pagination']);
+
+
+		app.controller('orderUnSendController', function ($scope, $http) {
+
+
+
+
+			$scope.reloadList = function () {
+
+				//切换页码
+				$scope.find($scope.paginationConf.currentPage, $scope.paginationConf.itemsPerPage,'2');
+
+			};
+
+			//分页控件配置
+			$scope.paginationConf = {
+				currentPage: 1,
+				totalItems: 10,
+				itemsPerPage: 5,
+				perPageOptions: [10, 20, 30, 40, 50],
+				onChange: function () {
+					console.log("paginationConf");
+					$scope.reloadList();//重新加载
+				}
+			};
+
+			$scope.orderList={};
+
+			//分页
+			$scope.find = function (page, rows,status) {
+
+
+				$http.get('http://localhost:9002/order/findBySellerIdAndStatus?pageNum=' + page + '&pageSize=' +rows+ '&status='+status,{'withCredentials':true}).success(
+						function (response) {
+							console.log(1111);
+							$scope.orderList = response.rows;
+							$scope.paginationConf.totalItems = response.total;//更新总记录数
+						}
+				);
+			}
+
+			$scope.update = function (orderId,status) {
+
+
+				$http.get('http://localhost:9002/order/update?orderId=' + orderId +  '&status='+status).success(
+						function (response) {
+
+							alert(response.message);
+							$scope.reloadList();
+						}
+				);
+			}
+
+
+
+		});
+	</script>
+
+</head>
+
+<body class="hold-transition skin-red sidebar-mini"  ng-app="xiaoxinshop" ng-controller="orderUnSendController"  >
+  <!-- .box-body -->
+
+                    <div class="box-header with-border">
+                        <h3 class="box-title">订单管理</h3>
+                    </div>
+
+                    <div class="box-body">
+
+                        <!-- 数据表格 -->
+                        <div class="table-box">
+
+                            <!--工具栏-->
+                            <div class="pull-left">
+                                <div class="form-group form-inline">
+
+                                </div>
+                            </div>
+
+                            <!--工具栏/-->
+
+			                  <!--数据列表-->
+			                  <table id="dataList" class="table table-bordered table-striped table-hover dataTable">
+			                      <thead>
+			                          <tr>
+			                              <th class="" style="padding-right:0px">
+			                                  <input id="selall" type="checkbox" class="icheckbox_square-blue">
+			                              </th>
+										  <th class="sorting_asc">订单ID</th>
+									      <th class="sorting">订单价格</th>
+										  <th class="sorting">下单用户</th>
+										  <th class="sorting">下单时间</th>
+									      <th class="sorting">收货人</th>
+									      <th class="sorting">收货地址</th>
+									      <th class="sorting">收货手机</th>
+
+					                      <th class="text-center">操作</th>
+			                          </tr>
+			                      </thead>
+			                      <tbody>
+			                          <tr ng-repeat="order in orderList">
+			                              <td><input  type="checkbox"></td>
+				                          <td>{{order.orderId}}</td>
+									      <td>{{order.payment}}</td>
+									      <td>{{order.userId}}</td>
+									      <td>{{order.createTime}}</td>
+									      <td>{{order.receiver}}</td>
+										  <td>{{order.receiverAreaName}}</td>
+									      <td>{{order.receiverMobile}}</td>
+		                                  <td class="text-center">
+											  <a  ng-click="update(order.orderId,'3')" class="btn bg-olive btn-xs">发货</a>
+		                                  </td>
+			                          </tr>
+			                      </tbody>
+			                  </table>
+			                  <!--数据列表/-->
+							<tm-pagination conf="paginationConf"></tm-pagination>
+
+                        </div>
+                        <!-- 数据表格 /-->
+
+
+                     </div>
+                    <!-- /.box-body -->
+
+</body>
+
+</html>
